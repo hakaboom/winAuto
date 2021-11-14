@@ -7,8 +7,10 @@ import win32api
 import win32con
 import win32gui
 import win32ui
-from airtest.aircv.utils import Image, pil_2_cv2
 
+from pywinauto.application import Application
+from pywinauto import mouse, keyboard
+from pywinauto.win32functions import SetFocus
 from .constant import SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN
 
 from typing import Dict
@@ -17,23 +19,28 @@ from typing import Dict
 
 
 class Win(object):
-    def __init__(self, hwnd: int = None, hwnd_title: str = None, hwnd_class: str = None):
+    def __init__(self, handle: int = None, handle_title: str = None, handle_class: str = None,
+                 window_topBar: bool = True):
         """
 
         Args:
-            hwnd: 窗口句柄
+            handle: 窗口句柄
+            handle_title: 窗口名
+            handle_class: 窗口类名
+            window_topBar: 是否存在带有窗口名称的顶部栏
         """
-        user32 = ctypes.windll.user32
-        user32.SetProcessDPIAware()
 
-        if hwnd:
-            self._hwnd = int(hwnd)
-        elif hwnd_class and hwnd_title:
-            self._hwnd = self.find_window(hwnd_class=hwnd_class, hwnd_title=hwnd_title)
-        elif hwnd_title:
-            self._hwnd = self.find_window(hwnd_title=hwnd_title)
-        elif hwnd_class:
-            self._hwnd = self.find_window(hwnd_class=hwnd_class)
+        # user32 = ctypes.windll.user32
+        # user32.SetProcessDPIAware()
+
+        if handle:
+            self._hwnd = int(handle)
+        elif handle_class and handle_title:
+            self._hwnd = self.find_window(hwnd_class=handle_class, hwnd_title=handle_title)
+        elif handle_title:
+            self._hwnd = self.find_window(hwnd_title=handle_title)
+        elif handle_class:
+            self._hwnd = self.find_window(hwnd_class=handle_class)
         else:
             self._hwnd = None
 
@@ -52,12 +59,44 @@ class Win(object):
             # 因此写死了x,y坐标解决
             # 这个方案不是很稳定,需要假设每个窗口都有一个顶部栏
             rect = win32gui.GetClientRect(self._hwnd)
-            self.rect.left = 8
-            self.rect.top = 31
-            self.rect.right = 8 + rect[2]
-            self.rect.bottom = 31 + rect[3]
+            if window_topBar:
+                self.rect.left = 8
+                self.rect.top = 31
+            else:
+                self.rect.left = 0
+                self.rect.top = 0
+            self.rect.right = self.rect.left + rect[2]
+            self.rect.bottom = self.rect.top + rect[3]
+
+        self.app = None
+        self._app = Application()
+        self._top_window = None
+        self.keyboard = keyboard
+        self.mouse = mouse
+        self.connect()
+        print(f'窗口所用句柄: {self._hwnd}')
+
+    def connect(self, timeout: int = 5):
+        """
+
+        Args:
+            timeout: 设定超时时长
+
+        Returns:
+            None
+        """
+        # TODO: 检测对应句柄是否在前台
+        self.app = self._app.connect(handle=self._hwnd)
+        self._top_window = self.app.window(handle=self._hwnd).wrapper_object()
+        win32gui.SetForegroundWindow(self._hwnd)
 
     def screenshot(self) -> np.ndarray:
+        """
+        截取图片
+
+        Returns:
+            图片的numpy类型数据
+        """
         widget = self.rect.right - self.rect.left
         height = self.rect.bottom - self.rect.top
         # 根据窗口句柄获取设备的上下文device context
@@ -88,12 +127,40 @@ class Win(object):
 
         return cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
 
+    # def rect(self):
+    #     """
+    #
+    #     Returns:
+    #
+    #     """
+    #     return self._top_window.rectangle()
+
+    @property
+    def title(self):
+        return self._top_window.texts()
+
     @staticmethod
-    def find_window(hwnd_class: str = None, hwnd_title: str = None):
+    def find_window(hwnd_class: str = None, hwnd_title: str = None) -> int:
+        """
+        根据窗口名或窗口类名获取对应窗口句柄
+
+        Args:
+            hwnd_class:
+            hwnd_title:
+
+        Returns:
+
+        """
         return win32gui.FindWindow(hwnd_class, hwnd_title)
 
     @staticmethod
     def get_all_hwnd() -> Dict[int, str]:
+        """
+        获取所有句柄
+
+        Returns:
+
+        """
         hwnd_title = {}
 
         def _fun(hwnd, mouse):

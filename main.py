@@ -1,32 +1,19 @@
 import cv2.cv2
 import win32gui
-
+import time
+import ctypes
 from winAuto.win import Win
 from baseImage import IMAGE
+from pywinauto import mouse, keyboard
+from pywinauto.win32functions import GetSystemMetrics
+from pywinauto.application import Application
+# a = Win(handle_title='Clash for Windows')
+# time.sleep(2)
+# a = mouse
+# a.press('left', coords=(880, 170))
+# time.sleep(10)
+# a.release('left', coords=(880, 170))
 
-#
-# a = Win()
-# IMAGE(a.screenshot()).save2path('test.png')
-import win32gui
-import win32api
-
-# from pymouse import PyMouse
-hwnd_title = {}
-
-def get_all_hwnd(hwnd, mouse):
-    if (win32gui.IsWindow(hwnd) and
-        win32gui.IsWindowEnabled(hwnd) and
-        win32gui.IsWindowVisible(hwnd)):
-        hwnd_title.update({hwnd: win32gui.GetWindowText(hwnd)})
-
-
-win32gui.EnumWindows(get_all_hwnd, 0)
-
-# m = PyMouse()
-
-for h, t in hwnd_title.items():
-    if t :
-        print(h, t)
-        if t == '米格尔':
-            left, top, right, bottom = win32gui.GetWindowRect(h)
-            print(left,top,right,bottom)
+# print(a.find_window(hwnd_class='Google Chrome'))
+app = Application()
+app.window(best_match='Chrome')
