@@ -15,7 +15,7 @@ from pywinauto import mouse, keyboard, win32structures
 from pywinauto.win32functions import SetFocus
 from baseImage.coordinate import Rect, Point, Size
 from .constant import SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN
-from .exceptions import WinBaseError, WinConnectTimeout
+from .exceptions import WinBaseError, WinConnectError
 
 from typing import Dict, Union, Tuple, List
 
@@ -69,7 +69,6 @@ class Win(object):
             if window_topBar:
                 self._window_border[0] = 31
                 self._window_border[1] = 8
-
         self.keyboard = keyboard
         self.mouse = mouse
         print(f'设备分辨率:{self._window_size}, 窗口所用句柄: {self._hwnd}')
@@ -87,10 +86,10 @@ class Win(object):
         # TODO: 检测对应句柄是否在前台
         try:
             self.app = self._app.connect(handle=self._hwnd, timeout=timeout)
+            self._top_window = self.app.window(handle=self._hwnd)
         except pywintypes.error as err:
-            raise WinConnectTimeout(f"连接句柄:'{self._hwnd}'超时, error={err}")
+            raise WinConnectError(f"连接句柄:'{self._hwnd}'超时, error={err}")
 
-        self._top_window = self.app.window(handle=self._hwnd)
         self.set_foreground(self._hwnd)
 
     def click(self, point: Union[Tuple[int, int], List, Point], duration: Union[float, int, None] = 0.01,
@@ -104,8 +103,9 @@ class Win(object):
             button: 左右键 left/right
 
         Returns:
-
+            None
         """
+
         end_x, end_y = None, None
         if isinstance(point, Point):
             end_x, end_y = point.x, point.y
@@ -164,9 +164,8 @@ class Win(object):
         """
         win32gui.SetForegroundWindow(handle)
 
-    # TODO: 转换为baseImage里的rect,point,size类
     @property
-    def rect(self) -> win32structures.RECT:
+    def rect(self):
         """
         获取窗口当前所在屏幕的位置
 
@@ -174,12 +173,10 @@ class Win(object):
             窗口的位置
         """
         rect = self._top_window.rectangle()
-        # 去除windows边框
-        rect.left = rect.left + self.screen_rect.left
-        rect.top = rect.top + self.screen_rect.top
-        rect.right = rect.right - self.screen_rect.left
-        rect.bottom = rect.bottom - self.screen_rect.left
-        return rect
+        return Rect(x=rect.left + self._window_border[1],
+                    y=rect.top + self._window_border[0],
+                    width=self._screenshot_size.width,
+                    height=self._screenshot_size.height)
 
     @property
     def title(self) -> str:

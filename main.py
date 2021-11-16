@@ -10,7 +10,6 @@ from pywinauto import mouse, keyboard
 from pywinauto.win32functions import GetSystemMetrics
 from pywinauto.application import Application
 
-a = Win()
+a = Win(handle=264086, window_topBar=False)
 IMAGE(a.screenshot()).save2path('test.png')
-
-# 8 31 973 586
+print(a.rect)
