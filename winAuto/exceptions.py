@@ -1,4 +1,20 @@
 # -*- coding: utf-8 -*-
+import pywintypes
+
+
+class WinBaseError(Exception):
+    def __init__(self, message):
+        self.message = message
+
+    def __repr__(self):
+        return repr(self.message)
+
+
+class WinConnectTimeout(WinBaseError):
+    """ connect hwnd time out """
+
+
+# -*- coding: utf-8 -*-
 import ctypes
 import time
 
@@ -22,7 +38,7 @@ from typing import Dict, Union, Tuple, List
 # TODO: 窗口操作(点击,大小缩放后的坐标)
 
 
-class Win(object):
+class __Win(object):
     def __init__(self, handle: int = None, handle_title: str = None, handle_class: str = None,
                  window_topBar: bool = True):
         """
@@ -36,6 +52,7 @@ class Win(object):
 
         # user32 = ctypes.windll.user32
         # user32.SetProcessDPIAware()
+
         if handle:
             self._hwnd = int(handle)
         elif handle_class and handle_title:
@@ -46,6 +63,7 @@ class Win(object):
             self._hwnd = self.find_window(hwnd_class=handle_class)
         else:
             self._hwnd = None
+
         self._hwnd = None if self._hwnd == 0 else self._hwnd
 
         self.app = None
@@ -59,19 +77,14 @@ class Win(object):
             self._hwnd = win32gui.GetDesktopWindow()
             self._screenshot_size = self._window_size
         else:
-            # 由于windows窗口存在一些边界
-            # 截图是会带上带有窗口名称的顶部栏
-            # 因此写死了x,y坐标解决
-            # 这个方案不是很稳定,需要假设每个窗口都有一个顶部栏
             rect = win32gui.GetClientRect(self._hwnd)
-            self._screenshot_size.width = rect[2]
-            self._screenshot_size.height = rect[3]
             if window_topBar:
-                self._window_border[0] = 31
-                self._window_border[1] = 8
-
+                self._window_border = [31, 0, 8, 8]
+            self._screenshot_size.width = rect[2] + 8
+            self._screenshot_size.height = rect[3]
         self.keyboard = keyboard
         self.mouse = mouse
+        print(self._screenshot_size)
         print(f'设备分辨率:{self._window_size}, 窗口所用句柄: {self._hwnd}')
         self.connect()
 
@@ -123,8 +136,6 @@ class Win(object):
         Returns:
             图片的numpy类型数据
         """
-        widget = self._screenshot_size.width
-        height = self._screenshot_size.height
         # 根据窗口句柄获取设备的上下文device context
         windowDC: int = win32gui.GetWindowDC(self._hwnd)
 
@@ -138,98 +149,18 @@ class Win(object):
         bitmap = win32ui.CreateBitmap()
 
         # 为bitmap开辟空间
-        bitmap.CreateCompatibleBitmap(dcObject, widget, height)
+        bitmap.CreateCompatibleBitmap(dcObject, self._screenshot_size.width, self._screenshot_size.height)
         compatibleDC.SelectObject(bitmap)
 
         # 将截图保存到saveBitMap中
-        compatibleDC.BitBlt((0, 0), (widget, height), dcObject, (self._window_border[1], self._window_border[0]),
-                            win32con.SRCCOPY)
+        compatibleDC.BitBlt((0, 0), (self._screenshot_size.width, self._screenshot_size.height), dcObject,
+                            (self._window_border[1], self._window_border[0]), win32con.SRCCOPY)
 
         img = np.frombuffer(bitmap.GetBitmapBits(True), dtype='uint8')
-        img.shape = (height, widget, 4)
+        img.shape = (self._screenshot_size.height, self._screenshot_size.width, 4)
 
         win32gui.DeleteObject(bitmap.GetHandle())
         dcObject.DeleteDC()
         compatibleDC.DeleteDC()
 
         return cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
-
-    @staticmethod
-    def set_foreground(handle) -> None:
-        """
-        将指定句柄的窗口带到前台并激活该窗口
-
-        Returns:
-            None
-        """
-        win32gui.SetForegroundWindow(handle)
-
-    # TODO: 转换为baseImage里的rect,point,size类
-    @property
-    def rect(self) -> win32structures.RECT:
-        """
-        获取窗口当前所在屏幕的位置
-
-        Returns:
-            窗口的位置
-        """
-        rect = self._top_window.rectangle()
-        # 去除windows边框
-        rect.left = rect.left + self.screen_rect.left
-        rect.top = rect.top + self.screen_rect.top
-        rect.right = rect.right - self.screen_rect.left
-        rect.bottom = rect.bottom - self.screen_rect.left
-        return rect
-
-    @property
-    def title(self) -> str:
-        """
-        获取窗口名
-
-        Returns:
-            窗口名
-        """
-        return self._top_window.texts()
-
-    def kill(self) -> None:
-        """
-        关闭窗口
-
-        Returns:
-            None
-        """
-        self.app.kill()
-
-    @staticmethod
-    def find_window(hwnd_class: str = None, hwnd_title: str = None) -> int:
-        """
-        根据窗口名或窗口类名获取对应窗口句柄
-
-        Args:
-            hwnd_class: 窗口类名
-            hwnd_title: 窗口名
-
-        Returns:
-            窗口句柄
-        """
-        return win32gui.FindWindow(hwnd_class, hwnd_title)
-
-    @staticmethod
-    def get_all_hwnd() -> Dict[int, str]:
-        """
-        获取所有句柄
-
-        Returns:
-
-        """
-        hwnd_title = {}
-
-        def _fun(hwnd, *args):
-            if (win32gui.IsWindow(hwnd) and
-                    win32gui.IsWindowEnabled(hwnd) and
-                    win32gui.IsWindowVisible(hwnd)):
-                hwnd_title.update({hwnd: win32gui.GetWindowText(hwnd)})
-
-        win32gui.EnumWindows(_fun, 0)
-
-        return hwnd_title
