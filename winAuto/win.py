@@ -13,13 +13,11 @@ import pywintypes
 from pywinauto.application import Application
 from pywinauto import mouse, keyboard, win32structures
 from pywinauto.win32functions import SetFocus
-from baseImage.coordinate import Rect, Point, Size
+from baseImage import Rect, Point, Size
 from .constant import SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN
 from .exceptions import WinBaseError, WinConnectError
 
 from typing import Dict, Union, Tuple, List
-
-# TODO: 窗口操作(点击,大小缩放后的坐标)
 
 
 class Win(object):
@@ -95,10 +93,10 @@ class Win(object):
     def click(self, point: Union[Tuple[int, int], List, Point], duration: Union[float, int, None] = 0.01,
               button: str = 'left'):
         """
-        点击屏幕(以连接窗口为准的相对坐标, self.screen_rects)
+        点击连接窗口的指定位置 ps:相对坐标,以连接的句柄窗口左上角为原点
 
         Args:
-            point: 需要点击的坐标(相对于已连接屏幕的坐标)
+            point: 需要点击的坐标
             duration: 延迟
             button: 左右键 left/right
 
@@ -111,6 +109,10 @@ class Win(object):
             end_x, end_y = point.x, point.y
         elif isinstance(point, (tuple, list)):
             end_x, end_y = point[0], point[1]
+
+        window_start_point = self.rect.tl  # 以连接的窗口左上角为原点,转为相对坐标
+        end_x += window_start_point.x
+        end_y += window_start_point.y
 
         self.mouse.press(button=button, coords=(end_x, end_y))
         time.sleep(duration)
@@ -165,12 +167,12 @@ class Win(object):
         win32gui.SetForegroundWindow(handle)
 
     @property
-    def rect(self):
+    def rect(self) -> Rect:
         """
         获取窗口当前所在屏幕的位置
 
         Returns:
-            窗口的位置
+            窗口的位置(以全屏左上角开始为原点的坐标)
         """
         rect = self._top_window.rectangle()
         return Rect(x=rect.left + self._window_border[1],

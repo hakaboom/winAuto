@@ -6,10 +6,10 @@ import time
 import ctypes
 from winAuto.win import Win
 from baseImage import IMAGE
-from pywinauto import mouse, keyboard
-from pywinauto.win32functions import GetSystemMetrics
-from pywinauto.application import Application
+from image_registration.api import Findit
+
 
 a = Win(handle=264086, window_topBar=False)
-IMAGE(a.screenshot()).save2path('test.png')
-print(a.rect)
+
+match = Findit()
+print(match.find_best_result(im_source='test2.png', im_search='test2.png'))
