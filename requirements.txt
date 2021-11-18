@@ -1,2 +1,5 @@
-baseImage==1.0.6
-pywinauto==0.6.8
+baseImage
+pywinauto
+pywin32
+numpy
+py-image-registration

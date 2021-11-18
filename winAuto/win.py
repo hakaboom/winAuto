@@ -114,9 +114,40 @@ class Win(object):
         end_x += window_start_point.x
         end_y += window_start_point.y
 
+        end_x = int(end_x)
+        end_y = int(end_y)
+
         self.mouse.press(button=button, coords=(end_x, end_y))
         time.sleep(duration)
         self.mouse.release(button=button, coords=(end_x, end_y))
+
+    def keyevent(self, keycode: str):
+        """
+        Perform a key event
+
+        References:
+            https://pywinauto.readthedocs.io/en/latest/code/pywinauto.keyboard.html
+
+        Args:
+            keycode: key code number or name
+
+        Returns:
+            None
+
+        """
+        self.keyboard.send_keys(keycode)
+
+    def text(self, text: str):
+        """
+        输入文字
+
+        Args:
+            text: 待输入的文字
+
+        Returns:
+            None
+        """
+        self.keyevent(text)
 
     def screenshot(self) -> np.ndarray:
         """

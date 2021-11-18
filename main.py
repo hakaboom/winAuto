@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
-import cv2.cv2
+import cv2
 import win32gui
 import win32api
 import time
 import ctypes
 from winAuto.win import Win
-from baseImage import IMAGE
-from image_registration.api import Findit
+from baseImage import IMAGE, Rect
+from image_registration.findit import Findit
 
 
-a = Win(handle=264086, window_topBar=False)
-
-match = Findit()
-print(match.find_best_result(im_source='test2.png', im_search='test2.png'))
+a = Win(handle=461326, window_topBar=False)
+a.text('%{F5}')
