@@ -104,22 +104,68 @@ class Win(object):
             None
         """
 
-        end_x, end_y = None, None
-        if isinstance(point, Point):
-            end_x, end_y = point.x, point.y
-        elif isinstance(point, (tuple, list)):
-            end_x, end_y = point[0], point[1]
+        if isinstance(point, (tuple, list)):
+            point = Point(x=point[0], y=point[1])
 
-        window_start_point = self.rect.tl  # 以连接的窗口左上角为原点,转为相对坐标
-        end_x += window_start_point.x
-        end_y += window_start_point.y
+        point = self._windowpos_to_screenpos(point)
 
-        end_x = int(end_x)
-        end_y = int(end_y)
-
-        self.mouse.press(button=button, coords=(end_x, end_y))
+        self.mouse.press(button=button, coords=(point.x, point.y))
         time.sleep(duration)
-        self.mouse.release(button=button, coords=(end_x, end_y))
+        self.mouse.release(button=button, coords=(point.x, point.y))
+
+    def swipe(self, point1: Union[Tuple[int, int], List, Point], point2: Union[Tuple[int, int], List, Point],
+              duration: Union[float, int, None] = 0.01, steps=5):
+        """
+        滑动一段距离
+
+        Args:
+            point1: 起始点
+            point2: 终点
+            duration: 滑动结束后延迟多久抬起
+            steps: 步长
+
+        Returns:
+
+        """
+        if isinstance(point1, (tuple, list)):
+            point1 = Point(x=point1[0], y=point1[1])
+
+        if isinstance(point1, (tuple, list)):
+            point2 = Point(x=point2[0], y=point2[1])
+
+        start = self._windowpos_to_screenpos(point1)
+        end = self._windowpos_to_screenpos(point2)
+
+        interval = float(duration) / (steps + 1)
+        self.mouse.press(coords=(start.x, start.y))
+        time.sleep(interval)
+        for i in range(1, steps):
+            x = int(start.x + (end.x - start.x) * i / steps)
+            y = int(start.y + (end.y - start.y) * i / steps)
+            self.mouse.move(coords=(x, y))
+            time.sleep(interval)
+        self.mouse.move(coords=(end.x, end.y))
+        self.mouse.release(coords=(end.x, end.y))
+
+        # -----------
+        if isinstance(point1, (tuple, list)):
+            point1 = Point(x=point1[0], y=point1[1])
+
+        if isinstance(point1, (tuple, list)):
+            point2 = Point(x=point2[0], y=point2[1])
+
+        start = self._windowpos_to_screenpos(point1)
+        end = self._windowpos_to_screenpos(point2)
+        interval = float(duration) / (steps + 1)
+        self.mouse.press(coords=(start.x, start.x))
+        time.sleep(interval)
+        for i in range(1, steps):
+            x = int(start.x + (end.x - start.x) * i / steps)
+            y = int(start.y + (end.y - start.y) * i / steps)
+            self.mouse.move(coords=(x, y))
+            time.sleep(interval)
+        self.mouse.move(coords=(end.x, end.y))
+        self.mouse.release(coords=(end.x, end.y))
 
     def keyevent(self, keycode: str):
         """
@@ -229,6 +275,20 @@ class Win(object):
             None
         """
         self.app.kill()
+
+    def _windowpos_to_screenpos(self, pos: Point):
+        """
+        转换相对坐标为屏幕的绝对坐标
+
+        Args:
+            pos: 需要转换的坐标
+
+        Returns:
+            Point
+        """
+        windowpos = self.rect.tl
+        pos = pos + windowpos
+        return pos
 
     @staticmethod
     def find_window(hwnd_class: str = None, hwnd_title: str = None) -> int:

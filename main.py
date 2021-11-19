@@ -5,9 +5,10 @@ import win32api
 import time
 import ctypes
 from winAuto.win import Win
-from baseImage import IMAGE, Rect
+from baseImage import IMAGE, Rect, Point
 from image_registration.findit import Findit
 
 
-a = Win(handle=461326, window_topBar=False)
-a.text('%{F5}')
+a = Win(handle_title='retire', window_topBar=True)
+
+a.swipe(point1=Point(1103, 270), point2=Point(860, 270))
