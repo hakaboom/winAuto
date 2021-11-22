@@ -22,7 +22,7 @@ from typing import Dict, Union, Tuple, List
 
 class Win(object):
     def __init__(self, handle: int = None, handle_title: str = None, handle_class: str = None,
-                 window_topBar: bool = True):
+                 window_topBar: bool = False):
         """
 
         Args:
@@ -207,20 +207,13 @@ class Win(object):
         # 根据窗口句柄获取设备的上下文device context
         windowDC: int = win32gui.GetWindowDC(self._hwnd)
 
-        # 根据上下文device context获取mfDC
         dcObject = win32ui.CreateDCFromHandle(windowDC)
-
-        # mfcDC创建可兼容的DC
         compatibleDC = dcObject.CreateCompatibleDC()
-
-        # 创建bitmap准备保存图片
         bitmap = win32ui.CreateBitmap()
 
-        # 为bitmap开辟空间
         bitmap.CreateCompatibleBitmap(dcObject, widget, height)
         compatibleDC.SelectObject(bitmap)
 
-        # 将截图保存到saveBitMap中
         compatibleDC.BitBlt((0, 0), (widget, height), dcObject, (self._window_border[1], self._window_border[0]),
                             win32con.SRCCOPY)
 
