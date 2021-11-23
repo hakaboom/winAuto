@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
+SM_CXBORDER = 5
+SM_CYBORDER = 6
 SM_XVIRTUALSCREEN = 76
 SM_YVIRTUALSCREEN = 77
 SM_CXVIRTUALSCREEN = 78
 SM_CYVIRTUALSCREEN = 79
+
+
+class SCREENSHOT_MODE(object):
+    WindowsGraphicsCapture = 1
+    BitBlt = 0

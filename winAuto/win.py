@@ -14,7 +14,7 @@ from pywinauto.application import Application
 from pywinauto import mouse, keyboard, win32structures
 from pywinauto.win32functions import SetFocus
 from baseImage import Rect, Point, Size
-from .constant import SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN
+from .constant import SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SCREENSHOT_MODE
 from .exceptions import WinBaseError, WinConnectError
 
 from typing import Dict, Union, Tuple, List
@@ -130,7 +130,7 @@ class Win(object):
         if isinstance(point1, (tuple, list)):
             point1 = Point(x=point1[0], y=point1[1])
 
-        if isinstance(point1, (tuple, list)):
+        if isinstance(point2, (tuple, list)):
             point2 = Point(x=point2[0], y=point2[1])
 
         start = self._windowpos_to_screenpos(point1)
@@ -147,25 +147,25 @@ class Win(object):
         self.mouse.move(coords=(end.x, end.y))
         self.mouse.release(coords=(end.x, end.y))
 
-        # -----------
-        if isinstance(point1, (tuple, list)):
-            point1 = Point(x=point1[0], y=point1[1])
-
-        if isinstance(point1, (tuple, list)):
-            point2 = Point(x=point2[0], y=point2[1])
-
-        start = self._windowpos_to_screenpos(point1)
-        end = self._windowpos_to_screenpos(point2)
-        interval = float(duration) / (steps + 1)
-        self.mouse.press(coords=(start.x, start.x))
-        time.sleep(interval)
-        for i in range(1, steps):
-            x = int(start.x + (end.x - start.x) * i / steps)
-            y = int(start.y + (end.y - start.y) * i / steps)
-            self.mouse.move(coords=(x, y))
-            time.sleep(interval)
-        self.mouse.move(coords=(end.x, end.y))
-        self.mouse.release(coords=(end.x, end.y))
+        # # -----------
+        # if isinstance(point1, (tuple, list)):
+        #     point1 = Point(x=point1[0], y=point1[1])
+        #
+        # if isinstance(point1, (tuple, list)):
+        #     point2 = Point(x=point2[0], y=point2[1])
+        #
+        # start = self._windowpos_to_screenpos(point1)
+        # end = self._windowpos_to_screenpos(point2)
+        # interval = float(duration) / (steps + 1)
+        # self.mouse.press(coords=(start.x, start.x))
+        # time.sleep(interval)
+        # for i in range(1, steps):
+        #     x = int(start.x + (end.x - start.x) * i / steps)
+        #     y = int(start.y + (end.y - start.y) * i / steps)
+        #     self.mouse.move(coords=(x, y))
+        #     time.sleep(interval)
+        # self.mouse.move(coords=(end.x, end.y))
+        # self.mouse.release(coords=(end.x, end.y))
 
     def keyevent(self, keycode: str):
         """
@@ -204,7 +204,7 @@ class Win(object):
         """
         widget = self._screenshot_size.width
         height = self._screenshot_size.height
-        # 根据窗口句柄获取设备的上下文device context
+
         windowDC: int = win32gui.GetWindowDC(self._hwnd)
 
         dcObject = win32ui.CreateDCFromHandle(windowDC)
@@ -244,11 +244,10 @@ class Win(object):
         Returns:
             窗口的位置(以全屏左上角开始为原点的坐标)
         """
-        rect = self._top_window.rectangle()
-        return Rect(x=rect.left + self._window_border[1],
-                    y=rect.top + self._window_border[0],
-                    width=self._screenshot_size.width,
-                    height=self._screenshot_size.height)
+        clientRect = win32gui.GetClientRect(self._hwnd)
+        point = win32gui.ScreenToClient(self._hwnd, (0, 0))
+        rect = Rect(x=abs(point[0]), y=abs(point[1]), width=clientRect[2], height=clientRect[3])
+        return rect
 
     @property
     def title(self) -> str:
