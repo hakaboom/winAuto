@@ -13,8 +13,10 @@ class IIterator_helpers:
             self.MoveNext()
             return value
         raise StopIteration
+
     def __iter__(self):
         return self
+
 
 @lru_cache()
 def IIterator(T):
@@ -26,9 +28,10 @@ def IIterator(T):
     return cls
 
 
-class IIterable_helpers:
+class IIterable_helpers(object):
     def __iter__(self):
         return self.First
+
 
 @lru_cache()
 def IIterable(T):

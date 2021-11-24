@@ -1,6 +1,6 @@
 from ctypes import c_uint32, c_void_p
 
-import rotypes.Windows.Storage.Streams
+import winAuto.utils.rotypes.Windows.Storage.Streams
 from winAuto.utils.rotypes.idldsl import define_winrt_com_method, _non_activatable_init, _static_method, runtimeclass, GUID
 from winAuto.utils.rotypes.inspectable import IInspectable
 

@@ -8,8 +8,8 @@ import cv2
 
 
 class BitBlt(object):
-    def __init__(self, handle: int):
-        self._hwnd = handle
+    def __init__(self, hwnd: int):
+        self._hwnd = hwnd
 
     def screenshot(self):
         windowDC: int = win32gui.GetWindowDC(self._hwnd)

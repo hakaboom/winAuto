@@ -82,7 +82,7 @@ define_winrt_com_method(IDirect3D11CaptureFramePool, 'get_DispatcherQueue',
 define_winrt_com_method(IDirect3D11CaptureFramePoolStatics2, 'CreateFreeThreaded',
                         IInspectable['Windows.Graphics.DirectX.Direct3D11.IDirect3DDevice'], DirectXPixelFormat,
                         c_int32, SizeInt32,
-                        retval=Direct3D11CaptureFramePool)  # FIXME: Windows.Graphics.DirectX.DirectXPixelFormat
+                        retval=Direct3D11CaptureFramePool)  # R: Windows.Graphics.DirectX.DirectXPixelFormat
 
 define_winrt_com_method(IGraphicsCaptureItem, 'get_DisplayName', propget=HSTRING)
 define_winrt_com_method(IGraphicsCaptureItem, 'get_Size', propget=SizeInt32)

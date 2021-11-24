@@ -3,7 +3,7 @@ from ctypes import c_int, c_int32
 from winAuto.utils.rotypes.Windows.Foundation import IClosable
 from winAuto.utils.rotypes.inspectable import IInspectable
 from winAuto.utils.rotypes.idldsl import define_winrt_com_method, _static_method, runtimeclass, GUID
-import rotypes.Windows.Storage.Streams
+import winAuto.utils.rotypes.Windows.Storage.Streams
 
 
 @GUID('689e0708-7eef-483f-963f-da938818e073')
@@ -26,6 +26,8 @@ class ISoftwareBitmapStatics(IInspectable):
 class SoftwareBitmap(runtimeclass, ISoftwareBitmap):
     CreateCopyWithAlphaFromBuffer = _static_method(ISoftwareBitmapStatics, 'CreateCopyWithAlphaFromBuffer')
 
+
 define_winrt_com_method(ISoftwareBitmapStatics, "CreateCopyWithAlphaFromBuffer",
-                        rotypes.Windows.Storage.Streams.IBuffer, BitmapPixelFormat, c_int32, c_int32, BitmapAlphaMode,
+                        winAuto.utils.rotypes.Windows.Storage.Streams.IBuffer, BitmapPixelFormat, c_int32, c_int32,
+                        BitmapAlphaMode,
                         retval=SoftwareBitmap, vtbl=10)

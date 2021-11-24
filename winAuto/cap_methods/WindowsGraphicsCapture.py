@@ -2,38 +2,37 @@
 from winAuto.utils.d3dcapture import CaptureSession
 
 
-session = CaptureSession()
-title = f"screenshot for window {hwnd}"
-cv2.namedWindow(title)
-state_box = [None, False, False]  # frame, changed, stop
+class WindowGraphicsCapture(object):
+    def __init__(self, hwnd: int):
+        self._hwnd = hwnd
+        self._session = CaptureSession()
+        self.state_box = [None, False, False]  # frame, changed, stop
+
+        def frame_callback(_session):
+            frame = _session.get_frame()
+            if frame is None:
+                return
+            self.state_box[0] = frame
+            self.state_box[1] = True
+
+        def close_callback(_session):
+            self.state_box[2] = True
+
+        self._session.frame_callback = frame_callback
+        self._session.close_callback = close_callback
+
+        self.start()
+
+    def start(self):
+        self._session.start(self._hwnd, True)
+
+    def stop(self):
+        self._session.stop()
+
+    def screenshot(self):
+        while not self.state_box[2]:
+            if self.state_box[1]:
+                self.state_box[1] = False
+                return self.state_box[0]
 
 
-def frame_callback(_session):
-    frame = _session.get_frame()
-    if frame is None:
-        return
-    state_box[0] = frame
-    state_box[1] = True
-
-
-def close_callback(_session):
-    state_box[2] = True
-
-
-session.frame_callback = frame_callback
-session.close_callback = close_callback
-session.start(hwnd, True)
-
-while not state_box[2]:
-    if state_box[1]:
-        state_box[1] = False
-        IMAGE(state_box[0]).imshow(title)
-    key = cv2.waitKey(16)
-    try:
-        if key == 27 or cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) != 1:
-            break
-    except:
-        break
-
-
-session.stop()

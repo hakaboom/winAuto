@@ -239,7 +239,7 @@ class Win(object):
     @property
     def rect(self) -> Rect:
         """
-        获取窗口当前所在屏幕的位置
+        获取窗口客户端区域当前所在屏幕的位置
 
         Returns:
             窗口的位置(以全屏左上角开始为原点的坐标)
