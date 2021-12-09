@@ -10,10 +10,13 @@ import win32gui
 import win32ui
 import pywintypes
 
+from winAuto.utils.window import GetWindowInfo
+from winAuto.cap_methods import BitBlt, WindowGraphicsCapture
+
 from pywinauto.application import Application
 from pywinauto import mouse, keyboard, win32structures
 from pywinauto.win32functions import SetFocus
-from baseImage import Rect, Point, Size
+from baseImage import Rect, Point, Size, Image
 from .constant import SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SCREENSHOT_MODE
 from .exceptions import WinBaseError, WinConnectError
 
@@ -22,14 +25,14 @@ from typing import Dict, Union, Tuple, List
 
 class Win(object):
     def __init__(self, handle: int = None, handle_title: str = None, handle_class: str = None,
-                 window_topBar: bool = False):
+                 window_border: Union[Tuple, List, None] = None, cap_method=SCREENSHOT_MODE.WindowsGraphicsCapture):
         """
 
         Args:
             handle: 窗口句柄
             handle_title: 窗口名
             handle_class: 窗口类名
-            window_topBar: 是否存在带有窗口名称的顶部栏
+            window_border: 是否存在带有窗口名称的顶部栏
         """
 
         # user32 = ctypes.windll.user32
@@ -49,7 +52,6 @@ class Win(object):
         self.app = None
         self._app = Application()
         self._top_window = None
-        self._window_border = [0, 0, 0, 0]  # 上,下,左,右
         self._screenshot_size = Size(0, 0)
         self._window_size = Size(win32api.GetSystemMetrics(SM_CXVIRTUALSCREEN),  # 全屏幕尺寸大小
                                  win32api.GetSystemMetrics(SM_CYVIRTUALSCREEN))
@@ -57,16 +59,21 @@ class Win(object):
             self._hwnd = win32gui.GetDesktopWindow()
             self._screenshot_size = self._window_size
         else:
-            # 由于windows窗口存在一些边界
-            # 截图是会带上带有窗口名称的顶部栏
-            # 因此写死了x,y坐标解决
-            # 这个方案不是很稳定,需要假设每个窗口都有一个顶部栏
             rect = win32gui.GetClientRect(self._hwnd)
             self._screenshot_size.width = rect[2]
             self._screenshot_size.height = rect[3]
-            if window_topBar:
-                self._window_border[0] = 31
-                self._window_border[1] = 8
+
+        self._window_border = window_border or self.get_window_border()  # 上,下,左,右
+        self.cap_fun = None
+        self.cap_method = cap_method
+        if self.cap_method == SCREENSHOT_MODE.BitBlt:
+            self.cap_fun = BitBlt(hwnd=self._hwnd, border=self._window_border,
+                                  screenshot_size=self._screenshot_size)
+        elif self.cap_method == SCREENSHOT_MODE.WindowsGraphicsCapture:
+            self.cap_fun = WindowGraphicsCapture(hwnd=self._hwnd)
+        else:
+            raise ValueError('未填写cap_method参数')
+
         self.keyboard = keyboard
         self.mouse = mouse
         print(f'设备分辨率:{self._window_size}, 窗口所用句柄: {self._hwnd}')
@@ -195,36 +202,17 @@ class Win(object):
         """
         self.keyevent(text)
 
-    def screenshot(self) -> np.ndarray:
-        """
-        截取图片
+    def screenshot(self):
+        img = Image(self.cap_fun.screenshot())
+        if self.cap_method == SCREENSHOT_MODE.WindowsGraphicsCapture:
+            # 上,下,左,右 self._window_border
+            rect = Rect(x=self._window_border[2],
+                        y=self._window_border[0],
+                        width=self._screenshot_size.width,
+                        height=self._screenshot_size.height)
+            return img.crop_image(rect)
 
-        Returns:
-            图片的numpy类型数据
-        """
-        widget = self._screenshot_size.width
-        height = self._screenshot_size.height
-
-        windowDC: int = win32gui.GetWindowDC(self._hwnd)
-
-        dcObject = win32ui.CreateDCFromHandle(windowDC)
-        compatibleDC = dcObject.CreateCompatibleDC()
-        bitmap = win32ui.CreateBitmap()
-
-        bitmap.CreateCompatibleBitmap(dcObject, widget, height)
-        compatibleDC.SelectObject(bitmap)
-
-        compatibleDC.BitBlt((0, 0), (widget, height), dcObject, (self._window_border[1], self._window_border[0]),
-                            win32con.SRCCOPY)
-
-        img = np.frombuffer(bitmap.GetBitmapBits(True), dtype='uint8')
-        img.shape = (height, widget, 4)
-
-        win32gui.DeleteObject(bitmap.GetHandle())
-        dcObject.DeleteDC()
-        compatibleDC.DeleteDC()
-
-        return cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
+        return img
 
     @staticmethod
     def set_foreground(handle) -> None:
@@ -281,6 +269,14 @@ class Win(object):
         windowpos = self.rect.tl
         pos = pos + windowpos
         return pos
+
+    def get_window_border(self):
+        info = GetWindowInfo(self._hwnd)
+        print(f'rcWindow: {info.rcWindow.left} {info.rcWindow.top} {info.rcWindow.right} {info.rcWindow.bottom}')
+        print(f'rcClient: {info.rcClient.left} {info.rcClient.top} {info.rcClient.right} {info.rcClient.bottom}')
+        # 上,下,左,右
+        border = (abs(info.rcWindow.top - info.rcClient.top) + 1, 1, 1, 1)
+        return border
 
     @staticmethod
     def find_window(hwnd_class: str = None, hwnd_title: str = None) -> int:
