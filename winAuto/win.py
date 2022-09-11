@@ -77,7 +77,19 @@ class Win(object):
         self.keyboard = keyboard
         self.mouse = mouse
         print(f'设备分辨率:{self._window_size}, 窗口所用句柄: {self._hwnd}')
-        self.connect()
+        # self.connect()
+
+    def start_app(self, path, **kwargs):
+        """
+        根据路径启动应用
+
+        Args:
+            path: 应用路径
+
+        Returns:
+            None
+        """
+        self.app = self._app.start(path, **kwargs)
 
     def connect(self, timeout: int = 5):
         """
@@ -95,7 +107,7 @@ class Win(object):
         except pywintypes.error as err:
             raise WinConnectError(f"连接句柄:'{self._hwnd}'超时, error={err}")
 
-        self.set_foreground(self._hwnd)
+        # self.set_foreground(self._hwnd)
 
     def click(self, point: Union[Tuple[int, int], List, Point], duration: Union[float, int, None] = 0.01,
               button: str = 'left'):
@@ -210,8 +222,7 @@ class Win(object):
                         y=self._window_border[0],
                         width=self._screenshot_size.width,
                         height=self._screenshot_size.height)
-            return img.crop_image(rect)
-
+            return img.crop(rect)
         return img
 
     @staticmethod
@@ -272,8 +283,8 @@ class Win(object):
 
     def get_window_border(self):
         info = GetWindowInfo(self._hwnd)
-        print(f'rcWindow: {info.rcWindow.left} {info.rcWindow.top} {info.rcWindow.right} {info.rcWindow.bottom}')
-        print(f'rcClient: {info.rcClient.left} {info.rcClient.top} {info.rcClient.right} {info.rcClient.bottom}')
+        # print(f'rcWindow: {info.rcWindow.left} {info.rcWindow.top} {info.rcWindow.right} {info.rcWindow.bottom}')
+        # print(f'rcClient: {info.rcClient.left} {info.rcClient.top} {info.rcClient.right} {info.rcClient.bottom}')
         # 上,下,左,右
         border = (abs(info.rcWindow.top - info.rcClient.top) + 1, 1, 1, 1)
         return border
